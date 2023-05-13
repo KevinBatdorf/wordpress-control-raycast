@@ -1,0 +1,44 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "wordpress-control",
+  "title": "WordPress Control",
+  "description": "Manage your WordPress sites in Raycast",
+  "icon": "command-icon.png",
+  "author": "KevinBatdorf",
+  "categories": [
+    "Developer Tools",
+    "Productivity"
+  ],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "wordpress-control",
+      "title": "View Sites",
+      "subtitle": "WordPress Control",
+      "description": "Control center for your WordPress sites",
+      "mode": "view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.51.0",
+    "@raycast/utils": "^1.6.1",
+    "sql.js": "^1.8.0",
+    "zx": "^7.2.2"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "1.0.5",
+    "@types/node": "18.8.3",
+    "@types/react": "18.0.9",
+    "@types/sql.js": "^1.4.4",
+    "eslint": "^7.32.0",
+    "prettier": "^2.5.1",
+    "typescript": "^4.4.3"
+  },
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}

@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 const fallback = "🌐";
 
-export const SiteListItem = ({ site, revalidate }: { site: Site; revalidate: () => Promise<Site[]> }) => {
+export const SiteListItem = ({ site, revalidate }: { site: Site; revalidate: () => void }) => {
   const { name, location } = site;
   const [iconUrl, setIconUrl] = useState<string>();
   const { dataString: logo } = useImageDataUrl(iconUrl);

@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "wordpress-control",
-  "title": "WordPress Control",
+  "title": "WordPress",
   "description": "Manage your WordPress sites in Raycast",
   "icon": "command-icon.png",
   "author": "KevinBatdorf",

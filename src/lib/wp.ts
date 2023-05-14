@@ -22,25 +22,13 @@ export const siteIcon = async ({ path }: CommandProps) => {
   return stdout;
 };
 
-// TODO: this is a bit verbose but it's because there isn't a way to pass in variables
-// to the template string. And I don't know how to do it the zx way and pass it through wp eval.
 export const getMedia = async ({
   path,
   size = "thumbnail",
 }: CommandProps & { size?: string }): Promise<MediaItemSimple[]> => {
-  $.prefix += `export WPPATH="${path}"; `;
-  if (size === "full") {
-    const { stdout } =
-      await $`cd $WPPATH && wp eval 'global $wpdb; $results = $wpdb->get_results("SELECT ID, post_mime_type FROM {$wpdb->prefix}posts WHERE post_type = \\"attachment\\" AND post_status = \\"inherit\\" AND post_mime_type LIKE \\"image%\\" ORDER BY ID DESC"); echo json_encode(array_map(function($result) { return ["id" => $result->ID, "url" => wp_get_attachment_image_src($result->ID, "full")[0], "alt" => get_post_meta($result->ID, "_wp_attachment_image_alt", true)]; }, $results));'`;
-    return JSON.parse(stdout || "[]");
-  }
-  if (size === "medium") {
-    const { stdout } =
-      await $`cd $WPPATH && wp eval 'global $wpdb; $results = $wpdb->get_results("SELECT ID, post_mime_type FROM {$wpdb->prefix}posts WHERE post_type = \\"attachment\\" AND post_status = \\"inherit\\" AND post_mime_type LIKE \\"image%\\" ORDER BY ID DESC"); echo json_encode(array_map(function($result) { return ["id" => $result->ID, "url" => wp_get_attachment_image_src($result->ID, "medium")[0], "alt" => get_post_meta($result->ID, "_wp_attachment_image_alt", true)]; }, $results));'`;
-    return JSON.parse(stdout || "[]");
-  }
+  $.prefix += `WPPATH="${path}"; IMGSIZE="${size}"; `;
   const { stdout } =
-    await $`cd $WPPATH && wp eval 'global $wpdb; $results = $wpdb->get_results("SELECT ID, post_mime_type FROM {$wpdb->prefix}posts WHERE post_type = \\"attachment\\" AND post_status = \\"inherit\\" AND post_mime_type LIKE \\"image%\\" ORDER BY ID DESC"); echo json_encode(array_map(function($result) { return ["id" => $result->ID, "url" => wp_get_attachment_image_src($result->ID, "thumbnail")[0], "alt" => get_post_meta($result->ID, "_wp_attachment_image_alt", true)]; }, $results));'`;
+    await $`cd $WPPATH && wp eval "global \\$wpdb; \\$results = \\$wpdb->get_results(\\"SELECT ID, post_mime_type FROM {\\$wpdb->prefix}posts WHERE post_type = 'attachment' AND post_status = 'inherit' AND post_mime_type LIKE 'image%' ORDER BY ID DESC\\"); echo json_encode(array_map(function(\\$result) { return ['id' => \\$result->ID, 'url' => wp_get_attachment_image_src(\\$result->ID, '$IMGSIZE')[0], 'alt' => get_post_meta(\\$result->ID, '_wp_attachment_image_alt', true)]; }, \\$results));"`;
   return JSON.parse(stdout || "[]");
 };
 

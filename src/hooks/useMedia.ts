@@ -11,7 +11,7 @@ export const useMedia = ({ location: path }: Site, options?: { size?: string }) 
     isLoading,
     revalidate,
   } = useCachedPromise(() => getMedia({ path, size: options?.size ?? "thumbnail" }));
-
+  console.log(media);
   const accessories = useMemo(
     () => [media ? tag(`${media.length} total`, Color.Blue) : undefined].filter(Boolean) as [],
     [media]

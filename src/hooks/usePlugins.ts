@@ -1,32 +1,26 @@
-import { useMemo, useEffect, useState } from "react";
-import { Site, Plugin } from "../types";
-import { useDatabase } from "./useDatabase";
+import { useMemo } from "react";
+import { Site } from "../types";
 import { getPlugins } from "../lib/wp";
 import { Color } from "@raycast/api";
 import { tag } from "../lib/helpers";
+import { useCachedPromise } from "@raycast/utils";
 
-export const usePlugins = ({ id }: Site) => {
-  const { getSite, ready } = useDatabase();
-  const [plugins, setPlugins] = useState<Plugin[]>();
+export const usePlugins = ({ location: path }: Site) => {
+  const { data: plugins, isLoading, revalidate } = useCachedPromise(() => getPlugins({ path }));
 
-  const active = plugins?.filter((plugin) => plugin.status === "active");
-  const inactive = plugins?.filter((plugin) => plugin.status === "inactive");
+  const active = plugins?.filter((plugin) => plugin.status === "active") ?? [];
+  const inactive = plugins?.filter((plugin) => plugin.status === "inactive") ?? [];
+  const hasUpdates = plugins?.filter((plugin) => plugin.update === "available") ?? [];
   const accessories = useMemo(
     () =>
       [
-        plugins ? tag(`${plugins.length} total`, Color.Blue) : undefined,
-        active ? tag(`${active.length} active`, Color.Green) : undefined,
-        inactive ? tag(`${inactive.length} inactive`, Color.SecondaryText) : undefined,
+        hasUpdates?.length > 0 ? tag(`${hasUpdates.length} updates`, Color.Orange) : undefined,
+        active?.length > 0 ? tag(`${active.length} active`, Color.Green) : undefined,
+        inactive?.length > 0 ? tag(`${inactive.length} inactive`, Color.SecondaryText) : undefined,
+        plugins && plugins?.length > 0 ? tag(`${plugins.length} total`, Color.Blue) : undefined,
       ].filter(Boolean) as [],
     [plugins, active, inactive]
   );
 
-  useEffect(() => {
-    if (!ready) return;
-    const { location: path } = getSite?.({ id }) ?? {};
-    if (!path) return;
-    getPlugins({ path }).then(setPlugins);
-  }, [ready, id]);
-
-  return { plugins, accessories, active, inactive, isLoading: !plugins };
+  return { plugins, accessories, active, inactive, isLoading, revalidate };
 };

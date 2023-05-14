@@ -1,48 +1,21 @@
-import { environment } from "@raycast/api";
-import initSqlJs, { Database } from "sql.js";
-import { existsSync, writeFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { DB_FILE_PATH } from "../constants";
+import { LocalStorage } from "@raycast/api";
+import { Site } from "../types";
 
-export const createTables = `
-CREATE TABLE sites (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  location TEXT NOT NULL,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  status TEXT DEFAULT 'active'
-);
-CREATE TABLE events (
-  id INTEGER PRIMARY KEY,
-  directory_id INTEGER NOT NULL,
-  event_name TEXT NOT NULL,
-  payload TEXT NOT NULL,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (directory_id) REFERENCES directories(id)
-);
-`;
+const siteKey = (location: string, name: string) => `site:${location}:${name}`;
+type SiteQueryParams = Omit<Site, "addedAt" | "id">;
 
-if (!existsSync(DB_FILE_PATH)) {
-  writeFileSync(DB_FILE_PATH, "", "utf8");
-}
-
-export const initDb = async () => {
-  const SQL = await initSqlJs({
-    locateFile: () => resolve(environment.assetsPath, "sql-wasm.wasm"),
-  });
-  const file = await readFile(DB_FILE_PATH);
-  const db = new SQL.Database(file);
-  try {
-    db.exec("SELECT * FROM sites");
-  } catch (err) {
-    db.run(createTables);
-    const buffer = Buffer.from(db.export());
-    writeFileSync(DB_FILE_PATH, buffer, "binary");
-  }
-  return db;
+export const addSite = async ({ location, name }: SiteQueryParams) => {
+  const id = siteKey(location, name);
+  await LocalStorage.setItem(id, JSON.stringify({ id, location, name, addedAt: new Date() }));
+  return await getSite(id);
 };
+export const getSite = async (id: Site["id"]): Promise<Site> => JSON.parse((await LocalStorage.getItem(id)) || "{}");
 
-export const dumpDb = async (db: Database) => {
-  writeFileSync(DB_FILE_PATH, Buffer.from(db.export()), "binary");
+export const removeSite = async (id: Site["id"]) => await LocalStorage.removeItem(id);
+
+export const hasSite = async (id: Site["id"]) => Boolean(await getSite(id));
+
+export const getSites = async () => {
+  const sites = await LocalStorage.allItems();
+  return Object.values(sites).map((site) => JSON.parse(site) as Site);
 };

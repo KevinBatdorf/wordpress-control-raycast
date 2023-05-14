@@ -1,33 +1,54 @@
-import { Action, ActionPanel, List } from "@raycast/api";
+import { Action, ActionPanel, Color, Icon, List, Toast, confirmAlert, showToast } from "@raycast/api";
 import { SiteSingle } from "./SiteSingle";
 import { Site } from "../types";
-import { useCachedPromise } from "@raycast/utils";
 import { siteIcon } from "../lib/wp";
-import { fetch } from "zx";
+import { removeSite } from "../lib/db";
+import { useImageDataUrl } from "../hooks/useImageDataUrl";
+import { useEffect, useState } from "react";
 
 const fallback = "🌐";
 
-export const SiteListItem = ({ site }: { site: Site }) => {
-  const { id, name, location } = site;
-  const { data: logo } = useCachedPromise(
-    async ({ path }) => {
-      const data = await siteIcon({ path });
-      const buffer = await (await fetch(data)).arrayBuffer();
-      const base64String = Buffer.from(buffer).toString("base64");
-      return `data:image/png;base64,${base64String}`;
-    },
-    [{ path: location }]
-  );
+export const SiteListItem = ({ site, revalidate }: { site: Site; revalidate: () => Promise<Site[]> }) => {
+  const { name, location } = site;
+  const [iconUrl, setIconUrl] = useState<string>();
+  const { dataString: logo } = useImageDataUrl(iconUrl);
+  const icon = { source: Icon.Trash, tintColor: Color.Red };
+
+  useEffect(() => {
+    siteIcon({ path: site.location }).then(setIconUrl);
+  }, [site.location]);
 
   return (
     <List.Item
-      id={`site-${id}`}
+      id={`site-${name}-${location}`}
       icon={{ source: logo ?? fallback, fallback }}
       title={name}
       subtitle={location}
       actions={
         <ActionPanel>
-          <Action.Push title="View Site" target={<SiteSingle site={site} />} />
+          <Action.Push
+            icon={{ source: logo ?? fallback, fallback }}
+            title="View Site"
+            target={<SiteSingle site={site} />}
+          />
+          <Action
+            icon={icon}
+            title="Remove Site"
+            onAction={async () => {
+              const confirm = await confirmAlert({
+                icon,
+                title: "Remove site from Raycast?",
+              });
+              if (!confirm) return;
+              await removeSite(site.id);
+              revalidate();
+              showToast({
+                title: "Site Removed",
+                message: site.name,
+                style: Toast.Style.Success,
+              });
+            }}
+          />
         </ActionPanel>
       }
     />

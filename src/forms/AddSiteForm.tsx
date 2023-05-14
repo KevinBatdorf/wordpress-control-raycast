@@ -1,16 +1,14 @@
-import { Action, ActionPanel, Detail, Form, Toast, showToast, useNavigation } from "@raycast/api";
+import { Action, ActionPanel, Form, Toast, showToast, useNavigation } from "@raycast/api";
 import { useState } from "react";
 import { version } from "../lib/wp";
-import { ProcessOutput } from "zx/core";
-import { useDatabase } from "../hooks/useDatabase";
-import { SiteSingle } from "../sites/SiteSingle";
+import { addSite } from "../lib/db";
+import { flashErrorDetails } from "../lib/errors";
 
 export const AddSiteForm = ({ callback }: { callback?: () => unknown }) => {
   const [nameError, setNameError] = useState<string>();
   const [locationError, setLocationError] = useState<string>();
   const [wpVersion, setWPVersion] = useState<string>();
   const { push, pop } = useNavigation();
-  const { addSite } = useDatabase();
 
   const maybeResetName = () => nameError && setNameError(undefined);
   const maybeResetLocation = () => locationError && setLocationError(undefined);
@@ -21,11 +19,15 @@ export const AddSiteForm = ({ callback }: { callback?: () => unknown }) => {
         <ActionPanel>
           <Action.SubmitForm
             title="Add Site"
-            onSubmit={(values) => {
-              const id = addSite({ name: values.name, location: values.location[0] });
-              callback?.();
+            onSubmit={async (values) => {
+              const site = await addSite({ name: values.name, location: values.location[0] });
               pop();
-              push(<SiteSingle id={String(id ?? "")} />);
+              callback?.();
+              showToast({
+                title: "Site Added",
+                message: site.name,
+                style: Toast.Style.Success,
+              });
             }}
           />
         </ActionPanel>
@@ -60,17 +62,8 @@ export const AddSiteForm = ({ callback }: { callback?: () => unknown }) => {
             cliVersion = await version({ path });
           } catch (error) {
             setLocationError("Error confirming WP install");
-            return await showToast({
-              title: "Command Error",
-              style: Toast.Style.Failure,
-              primaryAction: {
-                title: "View Error output",
-                onAction: (toast) => {
-                  push(<Detail markdown={error instanceof ProcessOutput ? error.stderr : "Unknown Error"} />);
-                  toast.hide();
-                },
-              },
-            });
+            flashErrorDetails(error, push);
+            return;
           }
           setWPVersion(cliVersion?.trim());
         }}
